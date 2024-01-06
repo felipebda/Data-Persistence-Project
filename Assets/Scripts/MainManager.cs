@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -18,10 +19,28 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
-    
-    // Start is called before the first frame update
+    //Custom Implementations
+    private string highPlayerName;
+    private int highPlayerScore;
+
+    public Text highScoreText;
+
+    public int initialZeroScore = 0;
+    //
+
+    public void Awake()
+    {
+        //custom implementations
+        LoadPlayerData();
+        //DeletePlayerData();
+    }
+
     void Start()
     {
+        // custom Implementations
+        highScoreText.text = $"Score: {highPlayerName}: {highPlayerScore}";
+        //
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -55,6 +74,18 @@ public class MainManager : MonoBehaviour
         }
         else if (m_GameOver)
         {
+            //custom implementations
+            //if the score is bigger, replace them
+            if(m_Points > highPlayerScore)
+            {
+                //update the score
+                highScoreText.text = $"Score: {PlayerInfoManager.Instance.playerName}: {m_Points}";
+                //save the player score data
+                SavePlayerData();
+
+            }
+            //
+
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -73,4 +104,55 @@ public class MainManager : MonoBehaviour
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
+
+
+    //custom implementations
+    [System.Serializable]
+    class PlayerSaveData
+    {
+        public string playerName;
+        public int playerScore;
+    }
+
+    //custom implementations
+    public void SavePlayerData()
+    {
+        PlayerSaveData playerData = new PlayerSaveData();
+        playerData.playerName = PlayerInfoManager.Instance.playerName;
+        playerData.playerScore = m_Points;
+
+        string json = JsonUtility.ToJson(playerData);
+
+        File.WriteAllText(Application.persistentDataPath + "/playersavefile.json",json);
+    }
+
+    //custom implemetations
+    public void LoadPlayerData()
+    {
+        string path = Application.persistentDataPath + "/playersavefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            PlayerSaveData playerData = JsonUtility.FromJson<PlayerSaveData>(json);
+            highPlayerName = playerData.playerName;
+            highPlayerScore = playerData.playerScore;
+
+        }
+    }
+
+    //custom implementation
+    public void DeletePlayerData()
+    {
+        string path = Application.persistentDataPath + "/playersavefile.json";
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+            Debug.Log("File deleted susscessful .");
+        }
+        else
+        {
+            Debug.Log("File doesn't exist.");
+        }
+    }
+
 }
